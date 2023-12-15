@@ -1,5 +1,7 @@
 import csv
 import sys
+import pandas as pd
+from calendar import month_abbr
 
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
@@ -8,7 +10,6 @@ TEST_SIZE = 0.4
 
 
 def main():
-
     # Check command-line arguments
     if len(sys.argv) != 2:
         sys.exit("Usage: python shopping.py data")
@@ -59,7 +60,22 @@ def load_data(filename):
     labels should be the corresponding list of labels, where each label
     is 1 if Revenue is true, and 0 otherwise.
     """
-    raise NotImplementedError
+    months_to_indices = {
+        month: num - 1 for num, month in enumerate(month_abbr) if month
+    }
+    # special case June b/c of poor labeling in dataset
+    months_to_indices["June"] = months_to_indices["Jun"]
+    del months_to_indices["Jun"]
+    df = pd.read_csv(filename)
+    df["Month"] = (
+        df["Month"].apply(lambda month: months_to_indices[month]).astype(int)
+    )
+    df["VisitorType"] = (df["VisitorType"] == "Returning_Visitor").astype(int)
+    df["Weekend"] = (df["Weekend"] == True).astype(int)
+    df["Revenue"] = (df["Revenue"] == True).astype(int)
+    evidence = list(map(list, df.iloc[:, :-1].itertuples(index=False)))
+    labels = df.iloc[:, -1].values.tolist()
+    return (evidence, labels)
 
 
 def train_model(evidence, labels):
